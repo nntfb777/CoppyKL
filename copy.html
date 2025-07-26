@@ -20,37 +20,49 @@
                 WebApp.ready();
                 statusElement.innerText = "Đang lấy dữ liệu...";
 
-                const textToCopy = WebApp.initDataUnsafe.start_param;
+                // Lấy dữ liệu "thô" từ Telegram, có thể chứa rác
+                let rawText = WebApp.initDataUnsafe.start_param;
 
-                if (textToCopy) {
+                if (rawText) {
+                    statusElement.innerText = "Đang xử lý dữ liệu...";
+
+                    // === LOGIC "LÀM SẠCH" DỮ LIỆU MỚI ===
+                    // Dấu hiệu bắt đầu của dữ liệu thừa
+                    const junkMarker = '?tgWebAppData';
+                    const junkIndex = rawText.indexOf(junkMarker);
+
+                    let cleanTextToCopy;
+                    // Nếu tìm thấy dấu hiệu...
+                    if (junkIndex !== -1) {
+                        // ...chỉ lấy phần chuỗi từ đầu đến trước dấu hiệu đó.
+                        cleanTextToCopy = rawText.substring(0, junkIndex);
+                    } else {
+                        // Nếu không tìm thấy, dữ liệu đã sạch sẵn.
+                        cleanTextToCopy = rawText;
+                    }
+                    // =======================================
+
                     statusElement.innerText = "Đang sao chép...";
-                    navigator.clipboard.writeText(textToCopy).then(function() {
-                        // === LOGIC MỚI: KIỂM TRA TRƯỚC KHI GỌI ALERT ===
-                        // WebApp.isVersionAtLeast('6.1') sẽ trả về true nếu phiên bản là 6.1 hoặc cao hơn.
+                    navigator.clipboard.writeText(cleanTextToCopy).then(function() {
+                        // Thành công!
                         if (WebApp.isVersionAtLeast('6.1')) {
                             WebApp.showAlert('Đã sao chép link thành công!');
                         }
-                        
-                        // Luôn luôn đóng sau khi hoàn tất.
-                        setTimeout(() => {
-                            WebApp.close();
-                        }, 200); // Giảm thời gian chờ
+                        setTimeout(() => WebApp.close(), 200);
 
                     }).catch(function(err) {
+                        // Thất bại
                         if (WebApp.isVersionAtLeast('6.1')) {
                             WebApp.showAlert('Lỗi: Không thể sao chép. ' + err);
                         }
-                        setTimeout(() => {
-                           WebApp.close();
-                        }, 500);
+                        setTimeout(() => WebApp.close(), 500);
                     });
                 } else {
+                    // Không có tham số khởi tạo
                     if (WebApp.isVersionAtLeast('6.1')) {
                         WebApp.showAlert('Lỗi: Không tìm thấy nội dung để sao chép từ bot.');
                     }
-                     setTimeout(() => {
-                        WebApp.close();
-                    }, 500);
+                    setTimeout(() => WebApp.close(), 500);
                 }
 
             } catch (e) {
