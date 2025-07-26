@@ -1,60 +1,72 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Debug Report</title>
+    <title>Copying...</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body { 
-            font-family: monospace; /* Dùng font monospace để dễ đọc */
-            padding: 10px; 
-            color: #f5f5f5; 
-            background-color: #17212b; 
-            word-wrap: break-word; /* Tự động xuống dòng cho các chuỗi dài */
-        }
-        h3 {
-            color: #6ab2f2;
-        }
-        pre {
-            background-color: #232e3c;
-            padding: 10px;
-            border-radius: 5px;
-            white-space: pre-wrap; /* Đảm bảo xuống dòng đúng cách */
-        }
+        body { font-family: sans-serif; text-align: center; padding: 20px; color: #f5f5f5; background-color: #17212b; }
     </style>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
-    <h3>Báo Cáo Debug Web App</h3>
-    
-    <pre id="debug-output">Đang khởi tạo...</pre>
+    <p id="status">Đang khởi tạo...</p>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const debugOutputElement = document.getElementById('debug-output');
-
+            const statusElement = document.getElementById('status');
+            
             try {
                 const WebApp = window.Telegram.WebApp;
                 WebApp.ready();
+                statusElement.innerText = "Đang lấy dữ liệu...";
 
-                // Thu thập dữ liệu
-                const startParam = WebApp.initDataUnsafe.start_param || "[KHÔNG CÓ DỮ LIỆU]";
-                const fullURL = window.location.href;
+                // === LOGIC MỚI: ĐỌC TỪ HASH VÀ LÀM SẠCH NÓ ===
+                
+                // 1. Lấy toàn bộ phần hash (bắt đầu bằng #)
+                let rawHash = window.location.hash;
 
-                // Tạo báo cáo
-                const report = 
-`[start_param nhận được từ Bot]
---------------------------------
-${startParam}
+                if (rawHash && rawHash.length > 1) {
+                    // Bỏ dấu # ở đầu
+                    let textWithJunk = rawHash.substring(1);
+                    
+                    // 2. Làm sạch dữ liệu thừa
+                    const junkMarker = '?tgWebAppData';
+                    const junkIndex = textWithJunk.indexOf(junkMarker);
 
-[URL đầy đủ mà Web App được mở]
---------------------------------
-${fullURL}`;
+                    let cleanText;
+                    if (junkIndex !== -1) {
+                        cleanText = textWithJunk.substring(0, junkIndex);
+                    } else {
+                        cleanText = textWithJunk;
+                    }
 
-                // Hiển thị báo cáo trực tiếp lên trang
-                debugOutputElement.innerText = report;
+                    // 3. Giải mã URL để có được chuỗi gốc
+                    const finalTextToCopy = decodeURIComponent(cleanText);
+
+                    // 4. Sao chép chuỗi đã được làm sạch và giải mã
+                    statusElement.innerText = "Đang sao chép...";
+                    navigator.clipboard.writeText(finalTextToCopy).then(function() {
+                        if (WebApp.isVersionAtLeast('6.1')) {
+                            WebApp.showAlert('Đã sao chép link thành công!');
+                        }
+                        setTimeout(() => WebApp.close(), 200);
+
+                    }).catch(function(err) {
+                        if (WebApp.isVersionAtLeast('6.1')) {
+                            WebApp.showAlert('Lỗi: Không thể sao chép. ' + err);
+                        }
+                        setTimeout(() => WebApp.close(), 500);
+                    });
+                } else {
+                    // Trường hợp không có hash
+                    if (WebApp.isVersionAtLeast('6.1')) {
+                        WebApp.showAlert('Lỗi: Không tìm thấy nội dung hash để sao chép.');
+                    }
+                    setTimeout(() => WebApp.close(), 500);
+                }
 
             } catch (e) {
-                debugOutputElement.innerText = 'Lỗi nghiêm trọng trong Web App:\n' + e.message;
+                statusElement.innerText = "Lỗi: Vui lòng mở từ ứng dụng Telegram. " + e.message;
             }
         });
     </script>
