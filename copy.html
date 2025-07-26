@@ -1,72 +1,45 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Copying...</title>
+    <title>Debug Tool</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        body { font-family: sans-serif; text-align: center; padding: 20px; color: #f5f5f5; background-color: #17212b; }
-    </style>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
-    <p id="status">Đang khởi tạo...</p>
-
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const statusElement = document.getElementById('status');
-            
             try {
                 const WebApp = window.Telegram.WebApp;
                 WebApp.ready();
-                statusElement.innerText = "Đang lấy dữ liệu...";
 
-                // Lấy dữ liệu "thô" từ Telegram, có thể chứa rác
-                let rawText = WebApp.initDataUnsafe.start_param;
+                // === THU THẬP TẤT CẢ DỮ LIỆU MÀ WEB APP "NHÌN THẤY" ===
+                
+                // 1. Dữ liệu mà Telegram chính thức cung cấp
+                const startParam = WebApp.initDataUnsafe.start_param || "[RỖNG]";
 
-                if (rawText) {
-                    statusElement.innerText = "Đang xử lý dữ liệu...";
+                // 2. Toàn bộ URL mà trình duyệt của Web App được mở
+                const fullURL = window.location.href;
 
-                    // === LOGIC "LÀM SẠCH" DỮ LIỆU MỚI ===
-                    // Dấu hiệu bắt đầu của dữ liệu thừa
-                    const junkMarker = '?tgWebAppData';
-                    const junkIndex = rawText.indexOf(junkMarker);
+                // === TẠO BÁO CÁO DEBUG ===
+                const report = 
+`--- BÁO CÁO DEBUG TỪ WEB APP ---
 
-                    let cleanTextToCopy;
-                    // Nếu tìm thấy dấu hiệu...
-                    if (junkIndex !== -1) {
-                        // ...chỉ lấy phần chuỗi từ đầu đến trước dấu hiệu đó.
-                        cleanTextToCopy = rawText.substring(0, junkIndex);
-                    } else {
-                        // Nếu không tìm thấy, dữ liệu đã sạch sẵn.
-                        cleanTextToCopy = rawText;
-                    }
-                    // =======================================
+1. Giá trị start_param nhận được:
+${startParam}
 
-                    statusElement.innerText = "Đang sao chép...";
-                    navigator.clipboard.writeText(cleanTextToCopy).then(function() {
-                        // Thành công!
-                        if (WebApp.isVersionAtLeast('6.1')) {
-                            WebApp.showAlert('Đã sao chép link thành công!');
-                        }
-                        setTimeout(() => WebApp.close(), 200);
+2. Toàn bộ URL mà Web App được mở:
+${fullURL}`;
 
-                    }).catch(function(err) {
-                        // Thất bại
-                        if (WebApp.isVersionAtLeast('6.1')) {
-                            WebApp.showAlert('Lỗi: Không thể sao chép. ' + err);
-                        }
-                        setTimeout(() => WebApp.close(), 500);
-                    });
-                } else {
-                    // Không có tham số khởi tạo
-                    if (WebApp.isVersionAtLeast('6.1')) {
-                        WebApp.showAlert('Lỗi: Không tìm thấy nội dung để sao chép từ bot.');
-                    }
-                    setTimeout(() => WebApp.close(), 500);
-                }
+                // === HIỂN THỊ BÁO CÁO CHO BẠN XEM ===
+                // Chúng ta sẽ dùng showAlert để đảm bảo bạn đọc được nó.
+                WebApp.showAlert(report, () => {
+                    // Sau khi bạn bấm OK, nó sẽ tự đóng lại.
+                    WebApp.close();
+                });
 
             } catch (e) {
-                statusElement.innerText = "Lỗi: Vui lòng mở từ ứng dụng Telegram. " + e.message;
+                // Nếu có lỗi, nó cũng sẽ báo cáo
+                alert('Lỗi nghiêm trọng trong Web App: ' + e.message);
             }
         });
     </script>
