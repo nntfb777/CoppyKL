@@ -1,45 +1,60 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Debug Tool</title>
+    <title>Debug Report</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { 
+            font-family: monospace; /* Dùng font monospace để dễ đọc */
+            padding: 10px; 
+            color: #f5f5f5; 
+            background-color: #17212b; 
+            word-wrap: break-word; /* Tự động xuống dòng cho các chuỗi dài */
+        }
+        h3 {
+            color: #6ab2f2;
+        }
+        pre {
+            background-color: #232e3c;
+            padding: 10px;
+            border-radius: 5px;
+            white-space: pre-wrap; /* Đảm bảo xuống dòng đúng cách */
+        }
+    </style>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
+    <h3>Báo Cáo Debug Web App</h3>
+    
+    <pre id="debug-output">Đang khởi tạo...</pre>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            const debugOutputElement = document.getElementById('debug-output');
+
             try {
                 const WebApp = window.Telegram.WebApp;
                 WebApp.ready();
 
-                // === THU THẬP TẤT CẢ DỮ LIỆU MÀ WEB APP "NHÌN THẤY" ===
-                
-                // 1. Dữ liệu mà Telegram chính thức cung cấp
-                const startParam = WebApp.initDataUnsafe.start_param || "[RỖNG]";
-
-                // 2. Toàn bộ URL mà trình duyệt của Web App được mở
+                // Thu thập dữ liệu
+                const startParam = WebApp.initDataUnsafe.start_param || "[KHÔNG CÓ DỮ LIỆU]";
                 const fullURL = window.location.href;
 
-                // === TẠO BÁO CÁO DEBUG ===
+                // Tạo báo cáo
                 const report = 
-`--- BÁO CÁO DEBUG TỪ WEB APP ---
-
-1. Giá trị start_param nhận được:
+`[start_param nhận được từ Bot]
+--------------------------------
 ${startParam}
 
-2. Toàn bộ URL mà Web App được mở:
+[URL đầy đủ mà Web App được mở]
+--------------------------------
 ${fullURL}`;
 
-                // === HIỂN THỊ BÁO CÁO CHO BẠN XEM ===
-                // Chúng ta sẽ dùng showAlert để đảm bảo bạn đọc được nó.
-                WebApp.showAlert(report, () => {
-                    // Sau khi bạn bấm OK, nó sẽ tự đóng lại.
-                    WebApp.close();
-                });
+                // Hiển thị báo cáo trực tiếp lên trang
+                debugOutputElement.innerText = report;
 
             } catch (e) {
-                // Nếu có lỗi, nó cũng sẽ báo cáo
-                alert('Lỗi nghiêm trọng trong Web App: ' + e.message);
+                debugOutputElement.innerText = 'Lỗi nghiêm trọng trong Web App:\n' + e.message;
             }
         });
     </script>
