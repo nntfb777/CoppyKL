@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Copying...</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: sans-serif; text-align: center; padding: 20px; }
+    </style>
+    <!-- Script bắt buộc của Telegram Web App -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    <p>Đang sao chép nội dung...</p>
+
+    <script>
+        // Hàm này sẽ chạy ngay khi trang được tải
+        (function() {
+            // Đảm bảo Web App đã sẵn sàng
+            window.Telegram.WebApp.ready();
+
+            // Lấy toàn bộ URL hash (bao gồm cả dấu '#')
+            const hash = window.location.hash;
+
+            // Kiểm tra xem hash có tồn tại và có nội dung không
+            if (hash && hash.length > 1) {
+                // Lấy nội dung cần sao chép (bỏ dấu '#' ở đầu)
+                // và giải mã các ký tự đặc biệt (như %20 cho dấu cách)
+                const textToCopy = decodeURIComponent(hash.substring(1));
+
+                // Sử dụng API Clipboard của trình duyệt
+                navigator.clipboard.writeText(textToCopy).then(function() {
+                    // Thành công! Gửi một thông báo nhỏ cho người dùng
+                    window.Telegram.WebApp.showAlert('Đã sao chép link vào bộ nhớ đệm!');
+                    
+                    // Tự động đóng Web App sau khi thông báo
+                    setTimeout(() => {
+                        window.Telegram.WebApp.close();
+                    }, 500); // Đợi nửa giây
+
+                }).catch(function(err) {
+                    // Thất bại
+                    window.Telegram.WebApp.showAlert('Lỗi: Không thể sao chép. ' + err);
+                    setTimeout(() => {
+                        window.Telegram.WebApp.close();
+                    }, 1000);
+                });
+            } else {
+                // Không có gì để sao chép
+                window.Telegram.WebApp.showAlert('Lỗi: Không tìm thấy nội dung để sao chép.');
+                setTimeout(() => {
+                    window.Telegram.WebApp.close();
+                }, 1000);
+            }
+        })();
+    </script>
+</body>
+</html>
