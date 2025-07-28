@@ -5,70 +5,63 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body { font-family: sans-serif; text-align: center; padding: 20px; color: #f5f5f5; background-color: #17212b; }
+        p { font-size: 16px; }
     </style>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
-    <p id="status">Đang khởi tạo...</p>
+    <p id="status">Đang chuẩn bị để sao chép...</p>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        // Sử dụng window.onload để đảm bảo tất cả tài nguyên trang đã được tải
+        window.onload = function() {
             const statusElement = document.getElementById('status');
             
             try {
                 const WebApp = window.Telegram.WebApp;
                 WebApp.ready();
-                statusElement.innerText = "Đang lấy dữ liệu...";
 
-                // === LOGIC MỚI: ĐỌC TỪ HASH VÀ LÀM SẠCH NÓ ===
-                
-                // 1. Lấy toàn bộ phần hash (bắt đầu bằng #)
-                let rawHash = window.location.hash;
+                // Lấy dữ liệu cần sao chép (kết hợp cả 2 cách để an toàn)
+                let rawData = WebApp.initDataUnsafe.start_param;
+                if (!rawData && window.location.hash.length > 1) {
+                    rawData = window.location.hash.substring(1);
+                }
 
-                if (rawHash && rawHash.length > 1) {
-                    // Bỏ dấu # ở đầu
-                    let textWithJunk = rawHash.substring(1);
-                    
-                    // 2. Làm sạch dữ liệu thừa
+                if (rawData) {
+                    // "Làm sạch" dữ liệu
                     const junkMarker = '?tgWebAppData';
-                    const junkIndex = textWithJunk.indexOf(junkMarker);
-
-                    let cleanText;
-                    if (junkIndex !== -1) {
-                        cleanText = textWithJunk.substring(0, junkIndex);
-                    } else {
-                        cleanText = textWithJunk;
-                    }
-
-                    // 3. Giải mã URL để có được chuỗi gốc
+                    const junkIndex = rawData.indexOf(junkMarker);
+                    let cleanText = (junkIndex !== -1) ? rawData.substring(0, junkIndex) : rawData;
                     const finalTextToCopy = decodeURIComponent(cleanText);
 
-                    // 4. Sao chép chuỗi đã được làm sạch và giải mã
-                    statusElement.innerText = "Đang sao chép...";
-                    navigator.clipboard.writeText(finalTextToCopy).then(function() {
-                        if (WebApp.isVersionAtLeast('6.1')) {
-                            WebApp.showAlert('Đã sao chép link thành công!');
-                        }
-                        setTimeout(() => WebApp.close(), 200);
+                    // === PHẦN QUAN TRỌNG NHẤT: TRÌ HOÃN HÀNH ĐỘNG ===
+                    // Chúng ta đợi 100 mili giây (0.1 giây) trước khi sao chép.
+                    // Khoảng thời gian này đủ để cửa sổ Web App được "focus".
+                    setTimeout(function() {
+                        statusElement.innerText = "Đang sao chép...";
+                        
+                        navigator.clipboard.writeText(finalTextToCopy).then(function() {
+                            statusElement.innerText = "Đã sao chép thành công!";
+                            WebApp.HapticFeedback.notificationOccurred('success');
+                            
+                            // Tự động đóng sau khi thành công
+                            setTimeout(() => WebApp.close(), 400);
 
-                    }).catch(function(err) {
-                        if (WebApp.isVersionAtLeast('6.1')) {
-                            WebApp.showAlert('Lỗi: Không thể sao chép. ' + err);
-                        }
-                        setTimeout(() => WebApp.close(), 500);
-                    });
+                        }).catch(function(err) {
+                            statusElement.innerText = "Lỗi sao chép tự động.\nVui lòng thử lại.";
+                            // Nếu thất bại, chúng ta không tự đóng để người dùng thấy lỗi
+                        });
+                    }, 100); // <-- Độ trễ 100ms
+
                 } else {
-                    // Trường hợp không có hash
-                    if (WebApp.isVersionAtLeast('6.1')) {
-                        WebApp.showAlert('Lỗi: Không tìm thấy nội dung hash để sao chép.');
-                    }
-                    setTimeout(() => WebApp.close(), 500);
+                    statusElement.innerText = "Không tìm thấy nội dung để sao chép.";
+                     setTimeout(() => WebApp.close(), 1000);
                 }
 
             } catch (e) {
-                statusElement.innerText = "Lỗi: Vui lòng mở từ ứng dụng Telegram. " + e.message;
+                statusElement.innerText = "Lỗi: Vui lòng mở từ Telegram.";
             }
-        });
+        };
     </script>
 </body>
 </html>
