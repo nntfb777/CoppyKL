@@ -46,7 +46,7 @@
 </head>
 <body>
     <p id="status">Đang cố gắng sao chép tự động...</p>
-    <button id="copyButton">Sao Chép Thủ Công</button>
+    <button id="copyButton">Sao Chép</button>
 
     <script>
         window.onload = function() {
@@ -86,7 +86,7 @@
                             setTimeout(() => WebApp.close(), 400);
                         }).catch(() => {
                             // TỰ ĐỘNG THẤT BẠI -> HIỂN THỊ NÚT DỰ PHÒNG
-                            statusElement.innerText = "Sao chép tự động không được phép.\nVui lòng bấm nút bên dưới.";
+                            statusElement.innerText = "Sao chép tự động không thành công.\nVui lòng bấm nút bên dưới để xác nhận lại rằng bạn muốn sao chép.";
                             copyButton.style.display = 'block';
                             WebApp.HapticFeedback.notificationOccurred('warning');
                         });
