@@ -1,61 +1,99 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Copying...</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Copy Link</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <style>
-        body { font-family: sans-serif; text-align: center; padding: 20px; color: #f5f5f5; background-color: #17212b; }
-        p { font-size: 16px; }
+        :root {
+            --tg-theme-bg-color: #17212b;
+            --tg-theme-text-color: #f5f5f5;
+            --tg-theme-button-color: #5288c1;
+            --tg-theme-button-text-color: #ffffff;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            box-sizing: border-box;
+            color: var(--tg-theme-text-color);
+            background-color: var(--tg-theme-bg-color);
+            transition: background-color 0.2s;
+        }
+        #copyButton {
+            display: none; /* Ẩn nút ban đầu */
+            font-size: 16px;
+            font-weight: bold;
+            padding: 15px 30px;
+            width: 100%;
+            max-width: 300px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            color: var(--tg-theme-button-text-color);
+            background-color: var(--tg-theme-button-color);
+        }
+        #status {
+            font-size: 16px;
+            min-height: 20px;
+        }
     </style>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
-    <p id="status">Đang chuẩn bị để sao chép...</p>
+    <p id="status">Đang cố gắng sao chép tự động...</p>
+    <button id="copyButton">Sao Chép Thủ Công</button>
 
     <script>
-        // Sử dụng window.onload để đảm bảo tất cả tài nguyên trang đã được tải
         window.onload = function() {
             const statusElement = document.getElementById('status');
-            
-            try {
-                const WebApp = window.Telegram.WebApp;
-                WebApp.ready();
+            const copyButton = document.getElementById('copyButton');
+            const WebApp = window.Telegram.WebApp;
 
-                // Lấy dữ liệu cần sao chép (kết hợp cả 2 cách để an toàn)
-                let rawData = WebApp.initDataUnsafe.start_param;
-                if (!rawData && window.location.hash.length > 1) {
-                    rawData = window.location.hash.substring(1);
-                }
+            try {
+                WebApp.ready();
+                WebApp.expand(); // Mở rộng cửa sổ để dễ nhìn hơn
+
+                let rawData = WebApp.initDataUnsafe.start_param || (window.location.hash.length > 1 ? window.location.hash.substring(1) : null);
 
                 if (rawData) {
-                    // "Làm sạch" dữ liệu
+                    let textWithJunk = rawData;
                     const junkMarker = '?tgWebAppData';
-                    const junkIndex = rawData.indexOf(junkMarker);
-                    let cleanText = (junkIndex !== -1) ? rawData.substring(0, junkIndex) : rawData;
+                    const junkIndex = textWithJunk.indexOf(junkMarker);
+                    let cleanText = (junkIndex !== -1) ? textWithJunk.substring(0, junkIndex) : textWithJunk;
                     const finalTextToCopy = decodeURIComponent(cleanText);
-
-                    // === PHẦN QUAN TRỌNG NHẤT: TRÌ HOÃN HÀNH ĐỘNG ===
-                    // Chúng ta đợi 100 mili giây (0.1 giây) trước khi sao chép.
-                    // Khoảng thời gian này đủ để cửa sổ Web App được "focus".
-                    setTimeout(function() {
-                        statusElement.innerText = "Đang sao chép...";
-                        
-                        navigator.clipboard.writeText(finalTextToCopy).then(function() {
+                    
+                    // Gán sự kiện cho nút bấm thủ công TRƯỚC
+                    copyButton.addEventListener('click', function() {
+                        navigator.clipboard.writeText(finalTextToCopy).then(() => {
                             statusElement.innerText = "Đã sao chép thành công!";
+                            copyButton.style.display = 'none';
                             WebApp.HapticFeedback.notificationOccurred('success');
-                            
-                            // Tự động đóng sau khi thành công
-                            setTimeout(() => WebApp.close(), 400);
-
-                        }).catch(function(err) {
-                            statusElement.innerText = "Lỗi sao chép tự động.\nVui lòng thử lại.";
-                            // Nếu thất bại, chúng ta không tự đóng để người dùng thấy lỗi
+                            setTimeout(() => WebApp.close(), 800);
                         });
-                    }, 100); // <-- Độ trễ 100ms
+                    });
+
+                    // Cố gắng sao chép tự động
+                    setTimeout(() => {
+                        navigator.clipboard.writeText(finalTextToCopy).then(() => {
+                            // TỰ ĐỘNG THÀNH CÔNG
+                            statusElement.innerText = "Đã sao chép tự động!";
+                            WebApp.HapticFeedback.notificationOccurred('success');
+                            setTimeout(() => WebApp.close(), 400);
+                        }).catch(() => {
+                            // TỰ ĐỘNG THẤT BẠI -> HIỂN THỊ NÚT DỰ PHÒNG
+                            statusElement.innerText = "Sao chép tự động không được phép.\nVui lòng bấm nút bên dưới.";
+                            copyButton.style.display = 'block';
+                            WebApp.HapticFeedback.notificationOccurred('warning');
+                        });
+                    }, 100);
 
                 } else {
-                    statusElement.innerText = "Không tìm thấy nội dung để sao chép.";
-                     setTimeout(() => WebApp.close(), 1000);
+                    statusElement.innerText = "Lỗi: Không tìm thấy nội dung.";
                 }
 
             } catch (e) {
